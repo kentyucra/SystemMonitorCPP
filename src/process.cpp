@@ -6,7 +6,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include <unistd.h>
 
 #include "linux_parser.h"
 
@@ -30,7 +29,15 @@ float Process::CpuUtilization() const {
 
   float totalTime = utime + stime + cutime + cstime;
   float seconds = uptime - (starttime / sysconf(_SC_CLK_TCK));
-  return 100 * ((totalTime / sysconf(_SC_CLK_TCK)) / seconds);
+  float m_utilization = 0;
+  try {
+    m_utilization = ((totalTime / sysconf(_SC_CLK_TCK)) / seconds);
+
+  } catch (...) {
+    m_utilization = 0;
+  }
+
+  return m_utilization;
 }
 
 // TODO: Return the command that generated this process
@@ -46,13 +53,13 @@ string Process::Ram() {
 string Process::User() { return LinuxParser::User(pid); }
 
 // TODO: Return the age of this process (in seconds)
-long int Process::UpTime() { 
-   vector<string> stats = LinuxParser::extractStats(pid);
+long int Process::UpTime() {
+  vector<string> stats = LinuxParser::extractStats(pid);
   if (stats.size() < 22) return 0;
 
   float starttime = std::stoi(stats[21]);
-  return starttime / sysconf(_SC_CLK_TCK); 
-     }
+  return LinuxParser::UpTime() - (starttime / sysconf(_SC_CLK_TCK));
+}
 
 // TODO: Overload the "less than" comparison operator for Process objects
 // REMOVE: [[maybe_unused]] once you define the function
