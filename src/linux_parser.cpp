@@ -155,16 +155,22 @@ vector<string> LinuxParser::CpuUtilization() { return {}; }
 
 vector<string> LinuxParser::extractStats(int pid) {
   vector<string> stats;
-  string line;
-  string val;
-  std::ifstream filestream(kProcDirectory + std::to_string(pid) +
-                           kStatFilename);
-  if (filestream.is_open()) {
-    std::getline(filestream, line);
-    std::istringstream linestream(line);
-    while (linestream >> val) {
-      stats.push_back(val);
+  string line = "";
+  string val = "";
+
+  try {
+    std::ifstream filestream(kProcDirectory + std::to_string(pid) +
+                             kStatFilename);
+    if (filestream.is_open()) {
+      if (std::getline(filestream, line)) {
+        std::istringstream linestream(line);
+        while (linestream >> val && filestream.is_open()) {
+          stats.push_back(val);
+        }
+      }
     }
+  } catch (...) {
+    stats = vector<string>();
   }
   return stats;
 }

@@ -2,7 +2,9 @@
 
 #include <unistd.h>
 
+#include <algorithm>
 #include <cctype>
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -20,11 +22,17 @@ int Process::Pid() { return pid; }
 float Process::CpuUtilization() const {
   vector<string> stats = LinuxParser::extractStats(pid);
   if (stats.size() < 22) return 0;
-  float utime = std::stoi(stats[13]);
-  float stime = std::stoi(stats[14]);
-  float cutime = std::stoi(stats[15]);
-  float cstime = std::stoi(stats[16]);
-  float starttime = std::stoi(stats[21]);
+  float utime = 0, stime = 0, cutime = 0, cstime = 0, starttime = 0;
+  if (std::all_of(stats[13].begin(), stats[13].end(), isdigit))
+    utime = std::stol(stats[13]);
+  if (std::all_of(stats[14].begin(), stats[14].end(), isdigit))
+    stime = std::stol(stats[14]);
+  if (std::all_of(stats[15].begin(), stats[15].end(), isdigit))
+    cutime = std::stol(stats[15]);
+  if (std::all_of(stats[16].begin(), stats[16].end(), isdigit))
+    cstime = std::stol(stats[16]);
+  if (std::all_of(stats[21].begin(), stats[21].end(), isdigit))
+    starttime = std::stol(stats[21]);
   float uptime = LinuxParser::UpTime();
 
   float totalTime = utime + stime + cutime + cstime;
@@ -56,8 +64,9 @@ string Process::User() { return LinuxParser::User(pid); }
 long int Process::UpTime() {
   vector<string> stats = LinuxParser::extractStats(pid);
   if (stats.size() < 22) return 0;
-
-  float starttime = std::stoi(stats[21]);
+  float starttime = 0;
+  if (std::all_of(stats[21].begin(), stats[21].end(), isdigit))
+    starttime = std::stol(stats[21]);
   return LinuxParser::UpTime() - (starttime / sysconf(_SC_CLK_TCK));
 }
 
