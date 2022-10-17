@@ -107,7 +107,45 @@ long LinuxParser::UpTime() {
 
 // TODO: Read and return the number of active jiffies for a PID
 // REMOVE: [[maybe_unused]] once you define the function
-long LinuxParser::ActiveJiffies(int pid [[maybe_unused]]) { return 0; }
+long LinuxParser::ActiveJiffies(int pid) {
+  string line = "";
+  string val = "";
+  float utime = 0, stime = 0, cutime = 0, cstime = 0, starttime = 0;
+
+  std::ifstream filestream(kProcDirectory + std::to_string(pid) +
+                           kStatFilename);
+  if (filestream.is_open()) {
+    if (std::getline(filestream, line)) {
+      std::istringstream linestream(line);
+      int index = 0;
+      while (linestream >> val && filestream.is_open()) {
+        if (index == 13 && std::all_of(val.begin(), val.end(), isdigit))
+          utime = std::stol(val);
+        if (index == 14 && std::all_of(val.begin(), val.end(), isdigit))
+          stime = std::stol(val);
+        if (index == 15 && std::all_of(val.begin(), val.end(), isdigit))
+          cutime = std::stol(val);
+        if (index == 16 && std::all_of(val.begin(), val.end(), isdigit))
+          cstime = std::stol(val);
+        if (index == 21 && std::all_of(val.begin(), val.end(), isdigit))
+          starttime = std::stol(val);
+        index++;
+      }
+    }
+  }
+  float uptime = LinuxParser::UpTime();
+  float totalTime = utime + stime + cutime + cstime;
+  float seconds = uptime - (starttime / sysconf(_SC_CLK_TCK));
+  float m_utilization = 0;
+  try {
+    m_utilization = ((totalTime / sysconf(_SC_CLK_TCK)) / seconds);
+
+  } catch (...) {
+    m_utilization = 0;
+  }
+
+  return m_utilization;
+}
 
 // TODO: Read and return the number of jiffies for the system
 long LinuxParser::Jiffies() { return ActiveJiffies() + IdleJiffies(); }
